@@ -4,18 +4,24 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // url      = env("DATABASE_URL") // 建议在本地 .env 中配置数据库连接串
 }
 
 // ==========================================
-// RBAC 模型定义
+// RBAC 模型定义 (已统一 createdDate -> createDate, 并加入软删除)
 // ==========================================
 
 model Role {
   id          String     @id @default(uuid())
   name        String     @unique
   description String?
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  
+  createDate  DateTime   @default(now()) @map("create_date")
+  creator     String?
+  updater     String?
+  updateDate  DateTime   @updatedAt @map("update_date")
+  deleted     Boolean    @default(false)
+  deletedDate DateTime?  @map("deleted_date")
 
   users       UserRole[]
 
@@ -29,8 +35,13 @@ model User {
   passwordHash String     @map("password_hash")
   isActive     Boolean    @default(true) @map("is_active")
   lastLogin    DateTime?  @map("last_login")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  
+  createDate   DateTime   @default(now()) @map("create_date")
+  creator      String?
+  updater      String?
+  updateDate   DateTime   @updatedAt @map("update_date")
+  deleted      Boolean    @default(false)
+  deletedDate  DateTime?  @map("deleted_date")
 
   roles        UserRole[]
 
@@ -38,11 +49,17 @@ model User {
 }
 
 model UserRole {
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id")
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  roleId    String   @map("role_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @map("user_id")
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId      String   @map("role_id")
+  
+  createDate  DateTime @default(now()) @map("create_date")
+  creator     String?
+  updater     String?
+  updateDate  DateTime @updatedAt @map("update_date")
+  deleted     Boolean  @default(false)
+  deletedDate DateTime? @map("deleted_date")
 
   @@id([userId, roleId])
   @@map("sys_user_roles")
@@ -60,10 +77,13 @@ model Food {
   proteinPer100g Decimal    @map("protein_per_100g")
   carbsPer100g   Decimal    @map("carbs_per_100g")
   fatPer100g     Decimal    @map("fat_per_100g")
+  
   creator        String?
   createDate     DateTime   @default(now()) @map("create_date")
   updater        String?
   updateDate     DateTime   @updatedAt @map("update_date")
+  deleted        Boolean    @default(false)
+  deletedDate    DateTime?  @map("deleted_date")
 
   dietLogs       DietLog[]
 
@@ -81,6 +101,8 @@ model Exercise {
   createDate   DateTime @default(now()) @map("create_date")
   updater      String?
   updateDate   DateTime @updatedAt @map("update_date")
+  deleted      Boolean  @default(false)
+  deletedDate  DateTime? @map("deleted_date")
 
   workoutSets  WorkoutSet[]
 
@@ -103,6 +125,8 @@ model DailyMetric {
   createDate   DateTime @default(now()) @map("create_date")
   updater      String?
   updateDate   DateTime @updatedAt @map("update_date")
+  deleted      Boolean  @default(false)
+  deletedDate  DateTime? @map("deleted_date")
 
   @@map("daily_metrics")
 }
@@ -126,6 +150,8 @@ model DietLog {
   createDate   DateTime @default(now()) @map("create_date")
   updater      String?
   updateDate   DateTime @updatedAt @map("update_date")
+  deleted      Boolean  @default(false)
+  deletedDate  DateTime? @map("deleted_date")
 
   food         Food     @relation(fields: [foodId], references: [id])
 
@@ -143,11 +169,13 @@ model WorkoutLog {
   endTime      DateTime? @map("end_time")
   totalVolume  Decimal   @default(0) @map("total_volume")
   notes        String?
-
+  
   creator      String?
   createDate   DateTime  @default(now()) @map("create_date")
   updater      String?
   updateDate   DateTime  @updatedAt @map("update_date")
+  deleted      Boolean   @default(false)
+  deletedDate  DateTime? @map("deleted_date")
 
   workoutSets  WorkoutSet[]
 
@@ -167,6 +195,8 @@ model WorkoutSet {
   createDate    DateTime @default(now()) @map("create_date")
   updater       String?
   updateDate    DateTime @updatedAt @map("update_date")
+  deleted       Boolean  @default(false)
+  deletedDate   DateTime? @map("deleted_date")
 
   workoutLog    WorkoutLog @relation(fields: [workoutLogId], references: [id])
   exercise      Exercise   @relation(fields: [exerciseId], references: [id])
