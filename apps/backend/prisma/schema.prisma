@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL") // 建议在本地 .env 中配置数据库连接串
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
