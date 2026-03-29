@@ -3,6 +3,11 @@
   "frontend": "vue3",
   "backend": "express",
   "orm": "prisma",
+  "database": {
+    "type": "postgresql",
+    "host": "localhost:5432",
+    "dbName": "RhineTavern"
+  },
   "miniprogram": "uni-app",
-  "lastUpdated": "2026-03-29T12:05:00.000Z"
+  "lastUpdated": "2026-03-29T12:10:00.000Z"
 }
