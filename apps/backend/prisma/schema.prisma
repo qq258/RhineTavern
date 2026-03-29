@@ -1,9 +1,7 @@
-// 基础生成器配置
 generator client {
   provider = "prisma-client-js"
 }
 
-// 数据源配置 (PostgreSQL)
 datasource db {
   provider = "postgresql"
 }
@@ -13,42 +11,165 @@ datasource db {
 // ==========================================
 
 model Role {
-  id          String     @id @default(uuid()) @db.Uuid
-  name        String     @unique @db.VarChar(50)
-  description String?    @db.VarChar(255)
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  // 关联：一个角色可以属于多个用户
   users       UserRole[]
 
-  @@map("sys_roles") // 映射到真实的表名
+  @@map("sys_roles")
 }
 
 model User {
-  id           String     @id @default(uuid()) @db.Uuid
-  username     String     @unique @db.VarChar(50)
-  email        String     @unique @db.VarChar(100)
-  passwordHash String     @map("password_hash") @db.VarChar(255)
+  id           String     @id @default(uuid())
+  username     String     @unique
+  email        String     @unique
+  passwordHash String     @map("password_hash")
   isActive     Boolean    @default(true) @map("is_active")
   lastLogin    DateTime?  @map("last_login")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  // 关联：一个用户可以拥有多个角色
   roles        UserRole[]
 
   @@map("sys_users")
 }
 
-// 关联表 (处理多对多关系)
 model UserRole {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id") @db.Uuid
+  userId    String   @map("user_id")
   role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  roleId    String   @map("role_id") @db.Uuid
+  roleId    String   @map("role_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@id([userId, roleId]) // 联合主键
+  @@id([userId, roleId])
   @@map("sys_user_roles")
+}
+
+// ==========================================
+// 1. 基础数据源 (Data Dictionary)
+// ==========================================
+
+model Food {
+  id             String     @id @default(uuid())
+  name           String
+  category       String?
+  kcalPer100g    Decimal    @map("kcal_per_100g")
+  proteinPer100g Decimal    @map("protein_per_100g")
+  carbsPer100g   Decimal    @map("carbs_per_100g")
+  fatPer100g     Decimal    @map("fat_per_100g")
+  creator        String?
+  createDate     DateTime   @default(now()) @map("create_date")
+  updater        String?
+  updateDate     DateTime   @updatedAt @map("update_date")
+
+  dietLogs       DietLog[]
+
+  @@map("foods")
+}
+
+model Exercise {
+  id           String   @id @default(uuid())
+  name         String
+  targetMuscle String   @map("target_muscle")
+  equipment    String?
+  notes        String?
+
+  creator      String?
+  createDate   DateTime @default(now()) @map("create_date")
+  updater      String?
+  updateDate   DateTime @updatedAt @map("update_date")
+
+  workoutSets  WorkoutSet[]
+
+  @@map("exercises")
+}
+
+// ==========================================
+// 2. 身体指标追踪 (Body Metrics)
+// ==========================================
+
+model DailyMetric {
+  id           String   @id @default(uuid())
+  recordDate   DateTime @unique @map("record_date")
+  weightKg     Decimal? @map("weight_kg")
+  bodyFatPct   Decimal? @map("body_fat_pct")
+  measurements Json?    @map("measurements")
+  statusLog    Json?    @map("status_log")
+
+  creator      String?
+  createDate   DateTime @default(now()) @map("create_date")
+  updater      String?
+  updateDate   DateTime @updatedAt @map("update_date")
+
+  @@map("daily_metrics")
+}
+
+// ==========================================
+// 3. 饮食与热量管理 (Diet & Nutrition)
+// ==========================================
+
+model DietLog {
+  id           String   @id @default(uuid())
+  recordDate   DateTime @map("record_date")
+  mealType     String   @map("meal_type")
+  foodId       String   @map("food_id")
+  weightG      Decimal  @map("weight_g")
+  totalKcal    Decimal  @map("total_kcal")
+  totalProtein Decimal  @map("total_protein")
+  totalCarbs   Decimal  @map("total_carbs")
+  totalFat     Decimal  @map("total_fat")
+
+  creator      String?
+  createDate   DateTime @default(now()) @map("create_date")
+  updater      String?
+  updateDate   DateTime @updatedAt @map("update_date")
+
+  food         Food     @relation(fields: [foodId], references: [id])
+
+  @@map("diet_logs")
+}
+
+// ==========================================
+// 4. 健身计划与训练日志 (Workout Logs)
+// ==========================================
+
+model WorkoutLog {
+  id           String    @id @default(uuid())
+  recordDate   DateTime  @map("record_date")
+  startTime    DateTime? @map("start_time")
+  endTime      DateTime? @map("end_time")
+  totalVolume  Decimal   @default(0) @map("total_volume")
+  notes        String?
+
+  creator      String?
+  createDate   DateTime  @default(now()) @map("create_date")
+  updater      String?
+  updateDate   DateTime  @updatedAt @map("update_date")
+
+  workoutSets  WorkoutSet[]
+
+  @@map("workout_logs")
+}
+
+model WorkoutSet {
+  id            String   @id @default(uuid())
+  workoutLogId  String   @map("workout_log_id")
+  exerciseId    String   @map("exercise_id")
+  setIndex      Int      @map("set_index")
+  weightKg      Decimal  @map("weight_kg")
+  reps          Int
+  isCompleted   Boolean  @default(true) @map("is_completed")
+
+  creator       String?
+  createDate    DateTime @default(now()) @map("create_date")
+  updater       String?
+  updateDate    DateTime @updatedAt @map("update_date")
+
+  workoutLog    WorkoutLog @relation(fields: [workoutLogId], references: [id])
+  exercise      Exercise   @relation(fields: [exerciseId], references: [id])
+
+  @@map("workout_sets")
 }
